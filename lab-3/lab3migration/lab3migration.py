@@ -1,12 +1,12 @@
 import pandas as pd
-from sqlalchemy import ForeignKey, create_engine, Column, Integer, Float, String, Enum, Date, Time
+from sqlalchemy import ForeignKey, create_engine, Column, Integer, Float, String, Enum, Date, Time, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
 import enum
 import psycopg2
 import alembic
 
 # Крок 1: Читаємо CSV файл
-df = pd.read_csv("GlobalWeatherRepository.csv")
+df = pd.read_csv("../lab-3/GlobalWeatherRepository.csv")
 
 # виведення списку хедерів, щоб визначити відповідно до категорії
 list_of_column_names = list(df.columns)
@@ -76,6 +76,7 @@ class PrecipNum(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     precip_mm = Column(Float, nullable=True)
     precip_in = Column(Float, nullable=True)
+    precip_bool = Column(Boolean, nullable=False)
 
 class WeatherData(Base):
     __tablename__ = 'weather_data'
@@ -101,6 +102,10 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+def count_precip(row):
+    return row['precip_mm'] > 2
+
+
 # Перетворюємо дані з DataFrame в об'єкти ORM та додаємо їх до бази даних
 for index, row in df.iterrows():
     country = session.query(Country).filter_by(name=row['country']).first()
@@ -109,15 +114,17 @@ for index, row in df.iterrows():
         session.add(country)
         session.commit()
 
-    precip_mm_num = session.query(PrecipNum).filter_by(precip_mm=row['precip_mm']).first()
-    precip_in_num = session.query(PrecipNum).filter_by(precip_in=row['precip_in']).first()
-    if not precip_mm_num:
-        precip_mm_num = PrecipNum(precip_mm=row['precip_mm'])
-        session.add(precip_mm_num)
+    precip = session.query(PrecipNum).filter_by(
+        precip_mm=row['precip_mm'],
+        precip_in=row['precip_in']
+    ).first()
 
-    if not precip_in_num:
-        precip_in_num = PrecipNum(precip_in=row['precip_in'])
-        session.add(precip_in_num)
+    if not precip:
+        precip = PrecipNum(
+            precip_mm=row['precip_mm'],
+            precip_in=row['precip_in'],
+            precip_bool=bool(count_precip(row))
+        )
 
     # Додавання погодних даних
     weather_data = WeatherData(
@@ -128,8 +135,8 @@ for index, row in df.iterrows():
         sunrise=pd.to_datetime(row['sunrise']).time(),
 
         country_id=country.id,
-        precip_mm_id = precip_mm_num.id,
-        precip_in_id = precip_in_num.id
+        precip_mm_id = precip.id,
+        precip_in_id = precip.id
     )
     session.add(weather_data)
 
