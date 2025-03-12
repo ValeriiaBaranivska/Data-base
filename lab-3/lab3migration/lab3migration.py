@@ -6,7 +6,7 @@ import psycopg2
 import alembic
 
 # Крок 1: Читаємо CSV файл
-df = pd.read_csv("../lab-3/GlobalWeatherRepository.csv")
+df = pd.read_csv("C:/Users/ACER/Desktop/Data-base/lab-3/GlobalWeatherRepository.csv")
 
 # виведення списку хедерів, щоб визначити відповідно до категорії
 list_of_column_names = list(df.columns)
@@ -95,7 +95,6 @@ class WeatherData(Base):
 engine = create_engine(f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
 
 # Створення таблиці
-#WeatherData.__table__.drop(engine)
 Base.metadata.create_all(engine)
 
 # Ініціалізуємо сесію
@@ -103,7 +102,10 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 def count_precip(row):
-    return row['precip_mm'] > 2
+    if row['precip_mm'] > 2:
+        return True
+    else:
+        return False
 
 
 # Перетворюємо дані з DataFrame в об'єкти ORM та додаємо їх до бази даних
@@ -123,8 +125,10 @@ for index, row in df.iterrows():
         precip = PrecipNum(
             precip_mm=row['precip_mm'],
             precip_in=row['precip_in'],
-            precip_bool=bool(count_precip(row))
+            precip_bool=count_precip(row)
         )
+        session.add(precip)
+        session.commit()
 
     # Додавання погодних даних
     weather_data = WeatherData(
