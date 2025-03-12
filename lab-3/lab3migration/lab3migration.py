@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, Float, String, Enum, Date, Time, Boolean
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 import enum
 import psycopg2
 import alembic
@@ -70,14 +70,14 @@ class Country(Base):
     __tablename__ = 'country'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
-
+    weather_data = relationship("WeatherData", back_populates="country")
 class PrecipNum(Base):
     __tablename__ = 'precipitate'
     id = Column(Integer, primary_key=True, autoincrement=True)
     precip_mm = Column(Float, nullable=True)
     precip_in = Column(Float, nullable=True)
     precip_bool = Column(Boolean, nullable=False)
-
+    weather_data = relationship("WeatherData", back_populates="precip")
 class WeatherData(Base):
     __tablename__ = 'weather_data'
 
@@ -89,8 +89,9 @@ class WeatherData(Base):
     sunrise = Column(Time, nullable=False)
 
     country_id = Column(Integer, ForeignKey('country.id'), nullable=False)
-    precip_mm_id = Column(Integer, ForeignKey('precipitate.id'))
-    precip_in_id = Column(Integer, ForeignKey('precipitate.id'))
+    precip_id = Column(Integer, ForeignKey('precipitate.id'), nullable=False)
+    country = relationship("Country", back_populates="weather_data")
+    precip = relationship("PrecipNum", back_populates="weather_data")
 # Створюємо SQLAlchemy engine до нової бази
 engine = create_engine(f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
 
@@ -114,7 +115,7 @@ for index, row in df.iterrows():
     if not country:
         country = Country(name=row['country'])
         session.add(country)
-        session.commit()
+
 
     precip = session.query(PrecipNum).filter_by(
         precip_mm=row['precip_mm'],
@@ -128,7 +129,7 @@ for index, row in df.iterrows():
             precip_bool=count_precip(row)
         )
         session.add(precip)
-        session.commit()
+
 
     # Додавання погодних даних
     weather_data = WeatherData(
@@ -139,11 +140,11 @@ for index, row in df.iterrows():
         sunrise=pd.to_datetime(row['sunrise']).time(),
 
         country_id=country.id,
-        precip_mm_id = precip.id,
-        precip_in_id = precip.id
+        precip_id = precip.id
     )
     session.add(weather_data)
 
 # Зберігаємо зміни в базі даних
 session.commit()
 session.close()
+
