@@ -28,24 +28,20 @@ def migrate_data():
     pg_session = PGSession()
     mysql_session = MYSQLSession()
 
-    try:
-        # Перенесення даних з PostgreSQL до MySQL
-        for country in pg_session.query(Country).all():
-            mysql_session.merge(country)
 
-        for precip in pg_session.query(PrecipNum).all():
-            mysql_session.merge(precip)
+    # Перенесення даних з PostgreSQL до MySQL
+    for country in pg_session.query(Country).all():
+        mysql_session.merge(country)
 
-        for weather_data in pg_session.query(WeatherData).all():
-            mysql_session.merge(weather_data)
+    for precip in pg_session.query(PrecipNum).all():
+        mysql_session.merge(precip)
 
-        # Зберігаємо зміни в MySQL
-        mysql_session.commit()
-    except Exception as e:
-        print(f"Помилка міграції: {e}")
-    finally:
-        mysql_session.close()
-        pg_session.close()
+    for weather_data in pg_session.query(WeatherData).all():
+        mysql_session.merge(weather_data)
+
+    # Зберігаємо зміни в MySQL
+    mysql_session.commit()
+
 
 if __name__ == "__main__":
     migrate_data()
