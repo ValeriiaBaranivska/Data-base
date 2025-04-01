@@ -115,3 +115,13 @@ orders = [
     "items_id" : [ObjectId("67eba78754efd3600024bf5b"), ObjectId("67eba78754efd3600024bf5b")]
     }
 ]
+
+capped_col = [
+{
+    "review_id": ObjectId,
+    "customer_name": "string",
+    "review_text": "string",
+    "rating": int,
+    "date": datetime
+}
+]
