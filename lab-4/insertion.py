@@ -1,5 +1,3 @@
-from conect_to_atlas import db, collection_item
-
 items = [
         {
             "category": "Phone",
@@ -45,3 +43,4 @@ items = [
         }
     ]
 
+orders = []
