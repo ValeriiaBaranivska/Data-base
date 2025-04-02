@@ -10,7 +10,6 @@ try:
 except CollectionInvalid:
     print(f"Capped collection '{cc_3}' вже існує.")
 
-
 print(f"Capped collection '{cc_3}' cтворено")
 
 def insert_review(collection, review_id, customer_name, review_text, rating):
